@@ -10,6 +10,8 @@ import android.view.View.OnClickListener;
 import android.view.View.OnTouchListener;
 import android.widget.CheckBox;
 import android.widget.Toast;
+
+import com.google.android.gms.ads.identifier.AdvertisingIdClient;
 import com.treasuredata.android.TDCallback;
 import com.treasuredata.android.TreasureData;
 
@@ -114,6 +116,8 @@ public class MainActivity extends Activity {
                 TreasureData.sharedInstance().resetUniqId();
             }
         });
+
+        sendAdIdtoTD();
     }
 
     @Override
@@ -186,5 +190,24 @@ public class MainActivity extends Activity {
     protected void onDestroy() {
         TreasureData.sharedInstance().uploadEvents();
         super.onDestroy();
+    }
+    
+    private void sendAdIdtoTD() {
+        Thread adIdThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                AdvertisingIdClient.Info adInfo;
+                try {
+                    adInfo = AdvertisingIdClient.getAdvertisingIdInfo(getApplicationContext());
+                    Map event = new HashMap<String, Object>();
+                    event.put("adid", adInfo.getId());
+                    TreasureData.sharedInstance().addEvent("android_adid", event);
+                    TreasureData.sharedInstance().uploadEventsWithCallback(uploadEventsCallback);
+                } catch (Exception e) {
+                    Log.e(TAG, "error fetching Advertising ID", e);
+                }
+            }
+        });
+        adIdThread.start();
     }
 }
